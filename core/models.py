@@ -2,7 +2,8 @@ from django.db import models
 
 
 class user(models.Model):
-	full_name  = models.CharField(max_length=200)
+	full_name  = models.CharField(max_length=200, null=True, blank=True)
+	short_name = models.CharField(max_length=30, help_text='short name like nickname, just [a-Z0-9].')
 	email      = models.EmailField()
 
 	def __unicode__(self):
