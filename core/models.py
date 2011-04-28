@@ -23,6 +23,8 @@ class ssh_keys(models.Model):
 
 class repository_system(models.Model):
 
+	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite'))
+
 	class Meta:
 		verbose_name        = 'Repository system'
 
@@ -34,7 +36,7 @@ class repository_system(models.Model):
 	access_key  = models.TextField(help_text='your private ssh key, which will be used for access to admin repository')
 	engine      = models.CharField(
 								max_length=50,
-								help_text='Engine can be gitosis or gitolite'
+								choices=GIT_ENGINE_CHOICES
 								)
 	
 	def __unicode__(self):
