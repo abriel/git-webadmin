@@ -1,0 +1,4 @@
+#!/bin/sh
+
+dir=`dirname $0`
+ssh -o BatchMode=yes -i $dir/../var/ssh_key $@
