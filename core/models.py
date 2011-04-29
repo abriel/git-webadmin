@@ -7,6 +7,9 @@ class user(models.Model):
 	email      = models.EmailField()
 
 	def __unicode__(self):
+		if self.full_name is None:
+			return self.short_name
+			
 		return self.full_name
 
 	def count_of_keys(self):
