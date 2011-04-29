@@ -1,4 +1,10 @@
 from django.db import models
+from self_libs import git
+from self_libs import useful_func
+import os
+import logging
+
+logger = logging.getLogger('core.custom')
 
 
 class user(models.Model):
@@ -45,6 +51,76 @@ class repository_system(models.Model):
 	
 	def __unicode__(self):
 		return self.system_path
+	
+	def fetch_admin_repo(self):
+		addition_info = ''
+		
+		try:
+			ssh_key_path = os.path.join('var', 'ssh_key_' + self.id.__str__())
+			ssh_key_file = file(ssh_key_path, 'w')
+			ssh_key_file.write(self.access_key)
+			ssh_key_file.close()
+			os.chmod(ssh_key_path, 0600)
+		except Exception, e:
+			return e, addition_info
+			
+		try:
+			checkout_path = os.path.join('var', 'repo_' + self.id.__str__())
+			os.environ['GIT_SSH'] = os.path.join(os.path.realpath(os.path.curdir), 'bin', 'ssh_wrapper')
+			if os.path.isdir(checkout_path):
+				useful_func.rmall(checkout_path)
+			git.clone(self.system_path, checkout_path)
+		except Exception, e:
+			return e, addition_info
+		
+		try:
+			gconf_path = os.path.join(checkout_path, 'gitosis.conf')
+			gconf = file(gconf_path)
+			data = {}
+			last_line = False
+
+			while True:
+				if last_line == True:
+					break
+				if gconf.tell() == os.stat(gconf_path).st_size:
+					last_line = True
+
+				line = gconf.readline()
+
+				if ((len(line.strip()) > 0) and (line.strip()[0] == '[')) or (last_line == True):
+
+					if data.has_key('members'):
+						for member in data['members'].split(' '):
+							member = member.strip()
+							if user.objects.filter(short_name=member).count() > 0:
+								continue
+
+							logger.info('found user %s' % member)
+							u = user()
+							u.short_name = u.full_name = member
+							u.save()
+
+							member_key_path = os.path.join(checkout_path, 'keydir', member + '.pub' )
+							if os.path.isfile( member_key_path ):
+								logger.info('importing key file %s for user %s' % (member_key_path, member))
+								tmpf = file( member_key_path )
+								for tmpkey in tmpf.readlines():
+									key = ssh_keys()
+									key.key = tmpkey
+									key.user_id = u
+									key.save()
+								tmpf.close()
+							else:
+								logger.warning('Cannot import key file %s for user %s' % (member_key_path, member))
+
+					data = {}
+				if len(line.split('=')) > 1:
+					data.update( {line.split('=')[0].strip() : line.split('=')[1].strip() })
+
+		except Exception, e:
+			return e, addition_info
+		
+		return None, addition_info
 
 
 class git_repository(models.Model):
