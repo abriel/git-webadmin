@@ -78,6 +78,7 @@ class repository_system(models.Model):
 			gconf = file(gconf_path)
 			data = {}
 			last_line = False
+			git_repository.objects.filter(system=self).delete()
 
 			while True:
 				if last_line == True:
@@ -112,7 +113,33 @@ class repository_system(models.Model):
 								tmpf.close()
 							else:
 								logger.warning('Cannot import key file %s for user %s' % (member_key_path, member))
-
+								
+					for access_mode in ['writable', 'readonly']:
+						access_mode_dict = { 'writable' : False, 'readonly' : True }
+						if data.has_key(access_mode):
+							for repo in data[access_mode].split(' '):
+								repo = repo.strip()
+								if git_repository.objects.filter(name=repo).count() == 0:
+									logger.info('found new repository %s' % repo)
+									r = git_repository()
+									r.name = repo
+									r.system = self
+									r.save()
+								else:
+									r = git_repository.objects.filter(name=repo)[0]
+							
+								if data.has_key('members'):
+									for member in data['members'].split(' '):
+										related_user = user.objects.filter(short_name=member)[0]
+										if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
+											continue
+										logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
+										access_obj = access()
+										access_obj.repository = r
+										access_obj.user = related_user
+										access_obj.read_only = access_mode_dict[access_mode]
+										access_obj.save()
+										
 					data = {}
 				if len(line.split('=')) > 1:
 					data.update( {line.split('=')[0].strip() : line.split('=')[1].strip() })
