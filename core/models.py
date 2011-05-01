@@ -41,7 +41,7 @@ class repository_system(models.Model):
 	system_path = models.CharField(
 								max_length=250,
 								verbose_name='URL to admin repo',
-								help_text='Example: file:///var/git/repositories/gitosis-admin.git or git@example.com:gitosis-admin.git'
+								help_text='Example: file:///var/git/repositories/gitosis-admin.git or git@example.com/gitosis-admin.git'
 								)
 	access_key  = models.TextField(help_text='your private ssh key, which will be used for access to admin repository')
 	engine      = models.CharField(
@@ -58,7 +58,7 @@ class repository_system(models.Model):
 		try:
 			if os.path.isdir('var') == False:
 				os.mkdir('var', 0700)
-			ssh_key_path = os.path.join('var', 'ssh_key_' + self.id.__str__())
+			ssh_key_path = os.path.join('var', 'ssh_key')
 			ssh_key_file = file(ssh_key_path, 'w')
 			ssh_key_file.write(self.access_key)
 			ssh_key_file.close()
