@@ -15,7 +15,7 @@ class user(models.Model):
 	def __unicode__(self):
 		if self.full_name is None:
 			return self.short_name
-			
+
 		return self.full_name
 
 	def count_of_keys(self):
@@ -39,8 +39,8 @@ class repository_system(models.Model):
 		verbose_name        = 'Repository system'
 
 	system_path = models.CharField(
-								max_length=250, 
-								verbose_name='URL to admin repo', 
+								max_length=250,
+								verbose_name='URL to admin repo',
 								help_text='Example: file:///var/git/repositories/gitosis-admin.git or git@example.com:gitosis-admin.git'
 								)
 	access_key  = models.TextField(help_text='your private ssh key, which will be used for access to admin repository')
@@ -48,14 +48,16 @@ class repository_system(models.Model):
 								max_length=50,
 								choices=GIT_ENGINE_CHOICES
 								)
-	
+
 	def __unicode__(self):
 		return self.system_path
-	
+
 	def fetch_admin_repo(self):
 		addition_info = ''
-		
+
 		try:
+			if os.path.isdir('var') == False:
+				os.mkdir('var', 0700)
 			ssh_key_path = os.path.join('var', 'ssh_key_' + self.id.__str__())
 			ssh_key_file = file(ssh_key_path, 'w')
 			ssh_key_file.write(self.access_key)
@@ -63,7 +65,7 @@ class repository_system(models.Model):
 			os.chmod(ssh_key_path, 0600)
 		except Exception, e:
 			return e, addition_info
-			
+
 		try:
 			checkout_path = os.path.join('var', 'repo_' + self.id.__str__())
 			os.environ['GIT_SSH'] = os.path.join(os.path.realpath(os.path.curdir), 'bin', 'ssh_wrapper')
@@ -72,7 +74,7 @@ class repository_system(models.Model):
 			git.clone(self.system_path, checkout_path)
 		except Exception, e:
 			return e, addition_info
-		
+
 		try:
 			gconf_path = os.path.join(checkout_path, 'gitosis.conf')
 			gconf = file(gconf_path)
@@ -113,7 +115,7 @@ class repository_system(models.Model):
 								tmpf.close()
 							else:
 								logger.warning('Cannot import key file %s for user %s' % (member_key_path, member))
-								
+
 					for access_mode in ['writable', 'readonly']:
 						access_mode_dict = { 'writable' : False, 'readonly' : True }
 						if data.has_key(access_mode):
@@ -127,7 +129,7 @@ class repository_system(models.Model):
 									r.save()
 								else:
 									r = git_repository.objects.filter(name=repo)[0]
-							
+
 								if data.has_key('members'):
 									for member in data['members'].split(' '):
 										related_user = user.objects.filter(short_name=member)[0]
@@ -139,14 +141,14 @@ class repository_system(models.Model):
 										access_obj.user = related_user
 										access_obj.read_only = access_mode_dict[access_mode]
 										access_obj.save()
-										
+
 					data = {}
 				if len(line.split('=')) > 1:
 					data.update( {line.split('=')[0].strip() : line.split('=')[1].strip() })
 
 		except Exception, e:
 			return e, addition_info
-		
+
 		return None, addition_info
 
 
@@ -158,7 +160,7 @@ class git_repository(models.Model):
 
 	name       = models.CharField(max_length=200)
 	system     = models.ForeignKey(repository_system, verbose_name='repository system')
-	
+
 	def __unicode__(self):
 		return self.name + ' on ' + self.system.__unicode__()
 
