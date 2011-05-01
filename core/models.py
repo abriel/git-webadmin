@@ -81,18 +81,22 @@ class repository_system(models.Model):
 			gconf = RawConfigParser()
 			gconf.read([gconf_path])
 			git_repository.objects.filter(system=self).delete()
+			system_users = map(lambda x: x.short_name, user.objects.all())
 
 			for section in filter(lambda x: x.startswith('group'), gconf.sections()):
+				section_users = []
 				if 'members' in gconf.options(section):
 					for member in gconf.get(section, 'members').split(' '):
 						member = member.strip()
-						if user.objects.filter(short_name=member).count() > 0:
+						section_users.append(member)
+						if member in system_users:
 							continue
 
 						logger.info('found user %s' % member)
 						u = user()
 						u.short_name = u.full_name = member
 						u.save()
+						system_users.append(member)
 
 						member_key_path = os.path.join(checkout_path, 'keydir', member + '.pub' )
 						if os.path.isfile( member_key_path ):
@@ -112,26 +116,25 @@ class repository_system(models.Model):
 					if access_mode in gconf.options(section):
 						for repo in gconf.get(section, access_mode).split(' '):
 							repo = repo.strip()
-							if git_repository.objects.filter(name=repo).count() == 0:
+							if git_repository.objects.filter(name=repo,system=self).count() == 0:
 								logger.info('found new repository %s' % repo)
 								r = git_repository()
 								r.name = repo
 								r.system = self
 								r.save()
 							else:
-								r = git_repository.objects.filter(name=repo)[0]
+								r = git_repository.objects.filter(name=repo,system=self)[0]
 
-							if 'members' in gconf.options(section):
-								for member in gconf.get(section, 'members').split(' '):
-									related_user = user.objects.filter(short_name=member)[0]
-									if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
-										continue
-									logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
-									access_obj = access()
-									access_obj.repository = r
-									access_obj.user = related_user
-									access_obj.read_only = access_mode_dict[access_mode]
-									access_obj.save()
+							for member in section_users:
+								related_user = user.objects.filter(short_name=member)[0]
+								if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
+									continue
+								logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
+								access_obj = access()
+								access_obj.repository = r
+								access_obj.user = related_user
+								access_obj.read_only = access_mode_dict[access_mode]
+								access_obj.save()
 
 		except Exception, e:
 			return e, addition_info
