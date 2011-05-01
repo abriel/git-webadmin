@@ -1,6 +1,7 @@
 from django.db import models
 from self_libs import git
 from self_libs import useful_func
+from ConfigParser import RawConfigParser
 import os
 import logging
 
@@ -77,74 +78,60 @@ class repository_system(models.Model):
 
 		try:
 			gconf_path = os.path.join(checkout_path, 'gitosis.conf')
-			gconf = file(gconf_path)
-			data = {}
-			last_line = False
+			gconf = RawConfigParser()
+			gconf.read([gconf_path])
 			git_repository.objects.filter(system=self).delete()
 
-			while True:
-				if last_line == True:
-					break
-				if gconf.tell() == os.stat(gconf_path).st_size:
-					last_line = True
+			for section in filter(lambda x: x.startswith('group'), gconf.sections()):
+				if 'members' in gconf.options(section):
+					for member in gconf.get(section, 'members').split(' '):
+						member = member.strip()
+						if user.objects.filter(short_name=member).count() > 0:
+							continue
 
-				line = gconf.readline()
+						logger.info('found user %s' % member)
+						u = user()
+						u.short_name = u.full_name = member
+						u.save()
 
-				if ((len(line.strip()) > 0) and (line.strip()[0] == '[')) or (last_line == True):
+						member_key_path = os.path.join(checkout_path, 'keydir', member + '.pub' )
+						if os.path.isfile( member_key_path ):
+							logger.info('importing key file %s for user %s' % (member_key_path, member))
+							tmpf = file( member_key_path )
+							for tmpkey in tmpf.readlines():
+								key = ssh_keys()
+								key.key = tmpkey
+								key.user_id = u
+								key.save()
+							tmpf.close()
+						else:
+							logger.warning('Cannot import key file %s for user %s' % (member_key_path, member))
 
-					if data.has_key('members'):
-						for member in data['members'].split(' '):
-							member = member.strip()
-							if user.objects.filter(short_name=member).count() > 0:
-								continue
-
-							logger.info('found user %s' % member)
-							u = user()
-							u.short_name = u.full_name = member
-							u.save()
-
-							member_key_path = os.path.join(checkout_path, 'keydir', member + '.pub' )
-							if os.path.isfile( member_key_path ):
-								logger.info('importing key file %s for user %s' % (member_key_path, member))
-								tmpf = file( member_key_path )
-								for tmpkey in tmpf.readlines():
-									key = ssh_keys()
-									key.key = tmpkey
-									key.user_id = u
-									key.save()
-								tmpf.close()
+				for access_mode in ['writable', 'readonly']:
+					access_mode_dict = { 'writable' : False, 'readonly' : True }
+					if access_mode in gconf.options(section):
+						for repo in gconf.get(section, access_mode).split(' '):
+							repo = repo.strip()
+							if git_repository.objects.filter(name=repo).count() == 0:
+								logger.info('found new repository %s' % repo)
+								r = git_repository()
+								r.name = repo
+								r.system = self
+								r.save()
 							else:
-								logger.warning('Cannot import key file %s for user %s' % (member_key_path, member))
+								r = git_repository.objects.filter(name=repo)[0]
 
-					for access_mode in ['writable', 'readonly']:
-						access_mode_dict = { 'writable' : False, 'readonly' : True }
-						if data.has_key(access_mode):
-							for repo in data[access_mode].split(' '):
-								repo = repo.strip()
-								if git_repository.objects.filter(name=repo).count() == 0:
-									logger.info('found new repository %s' % repo)
-									r = git_repository()
-									r.name = repo
-									r.system = self
-									r.save()
-								else:
-									r = git_repository.objects.filter(name=repo)[0]
-
-								if data.has_key('members'):
-									for member in data['members'].split(' '):
-										related_user = user.objects.filter(short_name=member)[0]
-										if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
-											continue
-										logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
-										access_obj = access()
-										access_obj.repository = r
-										access_obj.user = related_user
-										access_obj.read_only = access_mode_dict[access_mode]
-										access_obj.save()
-
-					data = {}
-				if len(line.split('=')) > 1:
-					data.update( {line.split('=')[0].strip() : line.split('=')[1].strip() })
+							if 'members' in gconf.options(section):
+								for member in gconf.get(section, 'members').split(' '):
+									related_user = user.objects.filter(short_name=member)[0]
+									if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
+										continue
+									logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
+									access_obj = access()
+									access_obj.repository = r
+									access_obj.user = related_user
+									access_obj.read_only = access_mode_dict[access_mode]
+									access_obj.save()
 
 		except Exception, e:
 			return e, addition_info
