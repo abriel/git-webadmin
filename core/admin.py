@@ -19,8 +19,10 @@ class git_repo_admin(admin.ModelAdmin):
 	list_display = ('name', 'system')
 
 class RepositorySystemAdmin(admin.ModelAdmin):
-	
+
 	def save_model(self, request, obj, form, change):
+		obj.save()
+
 		error = ''
 		addition_info = ''
 		try:
@@ -35,8 +37,7 @@ class RepositorySystemAdmin(admin.ModelAdmin):
 			messages.error(request, error)
 			messages.error(request, 'Additional info:')
 			messages.error(request, addition_info)
-		
-		obj.save()
+
 		if len(addition_info) > 0:
 			messages.info(request, 'Additional info:')
 			messages.info(request, addition_info)
