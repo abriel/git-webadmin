@@ -154,6 +154,25 @@ class git_repository(models.Model):
 	def __unicode__(self):
 		return self.name + ' on ' + self.system.__unicode__()
 
+	def generate_config(self):
+		gconf = RawConfigParser()
+		gconf.add_section('gitosis')
+		repositories = git_repository.objects.filter(system=self.system).all()
+
+		for repository in repositories:
+			for (access_mode_name, access_mode) in { 'writable' : False, 'readonly' : True }.items():
+				members = access.objects.filter(repository=repository,read_only=access_mode).all()
+				if members.count() > 0:
+					current_section = repository.name + '-' + access_mode_name
+					gconf.add_section(current_section)
+					gconf.set(current_section, 'members', ''.join(map(lambda x: x.user.short_name + ' ', members)))
+					gconf.set(current_section, access_mode_name, repository.name)
+
+		gconf_path = os.path.join('var', 'repo_' + self.system.id.__str__(), 'gitosis.conf')
+		fp = open(gconf_path, 'w')
+		gconf.write(fp)
+		fp.close()
+
 
 class access(models.Model):
 	repository = models.ForeignKey(git_repository)
