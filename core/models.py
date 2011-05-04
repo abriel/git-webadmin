@@ -144,7 +144,7 @@ class Repository_System(models.Model):
 
 		return None, addition_info
 
-	def git_push(self, addition_info):
+	def git_push(self, addition_info, push=True):
 		grepo = git.LocalRepository(os.path.join('var','repo_' + self.id.__str__()))
 		for (file_typo, files) in { 'changed': grepo.getChangedFiles(), 'added': grepo.getUntrackedFiles() }.items():
 			for gfile in map(lambda x: str(x), files):
@@ -163,8 +163,9 @@ class Repository_System(models.Model):
 				grepo.rm(gfile)
 				grepo.commit(commit_message)
 
-		self.set_ssh_env()
-		grepo.push()
+		if push == True:
+			self.set_ssh_env()
+			grepo.push()
 
 
 class git_repository(models.Model):
