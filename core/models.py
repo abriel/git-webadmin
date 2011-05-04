@@ -32,7 +32,7 @@ class ssh_keys(models.Model):
 	user_id    = models.ForeignKey(user)
 
 
-class repository_system(models.Model):
+class Repository_System(models.Model):
 
 	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite'))
 
@@ -175,7 +175,7 @@ class git_repository(models.Model):
 		verbose_name_plural = 'Git repositories'
 
 	name       = models.CharField(max_length=200)
-	system     = models.ForeignKey(repository_system, verbose_name='repository system')
+	system     = models.ForeignKey(Repository_System, verbose_name='repository system')
 
 	def __unicode__(self):
 		return self.name + ' on ' + self.system.__unicode__()

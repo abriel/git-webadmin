@@ -1,4 +1,4 @@
-from core.models import user, ssh_keys, git_repository, access, repository_system
+from core.models import user, ssh_keys, git_repository, access, Repository_System
 from django.contrib import admin
 from django.contrib import messages
 
@@ -58,5 +58,5 @@ class RepositorySystemAdmin(admin.ModelAdmin):
 admin.site.register(user, useradmin)
 
 admin.site.register(git_repository, GitRepositoryAdmin)
-admin.site.register(repository_system, RepositorySystemAdmin)
+admin.site.register(Repository_System, RepositorySystemAdmin)
 
