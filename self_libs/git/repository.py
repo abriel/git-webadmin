@@ -110,7 +110,7 @@ class RemoteRepository(Repository):
             if sha is not None:
                 return commit.Commit(self, sha)
         raise NonexistentRefException("Cannot find ref name %r in %s" % (refname, self))
-        
+
     def getBranches(self):
         return self._getRefsAsClass('refs/heads/', branch.RemoteBranch)
     def getTags(self):
@@ -158,7 +158,7 @@ class LocalRepository(Repository):
         return repo
     def clone(self, repo):
         self._executeGitCommandAssertSuccess("git clone %s %s" % (self._asURL(repo), self.path), cwd=".")
-    ########################### Querying repository refs ###########################        
+    ########################### Querying repository refs ###########################
     def getBranches(self):
         returned = []
         for git_branch_line in self._executeGitCommandAssertSuccess("git branch").stdout:
@@ -214,7 +214,7 @@ class LocalRepository(Repository):
         returned = self._executeGitCommand("git merge-base %s %s" % (a, b))
         if returned.returncode == 0:
             return commit.Commit(self, returned.stdout.read().strip())
-        # make sure this is not a misc. error with git 
+        # make sure this is not a misc. error with git
         unused = self.getHead()
         return None
     ################################ Querying Status ###############################
@@ -260,6 +260,10 @@ class LocalRepository(Repository):
             return self.containsCommit(thing)
         raise NotImplementedError()
     ################################ Staging content ###############################
+    def mv(self, path_source, path_dest):
+        self._executeGitCommandAssertSuccess("git mv %s %s" % ( quote_for_shell(path_source), quote_for_shell(path_dest) ))
+    def rm(self, path):
+        self._executeGitCommandAssertSuccess("git rm %s" % quote_for_shell(path))
     def add(self, path):
         self._executeGitCommandAssertSuccess("git add %s" % quote_for_shell(path))
     def addAll(self):
@@ -415,4 +419,4 @@ def find_repository():
         path, path_tail = os.path.split(current_path)
         if not path_tail:
             raise CannotFindRepository("Cannot find repository for %s" % (orig_path,))
-        
+
