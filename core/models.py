@@ -53,23 +53,26 @@ class repository_system(models.Model):
 	def __unicode__(self):
 		return self.system_path
 
+	def set_ssh_env(self):
+		if os.path.isdir('var') == False:
+			os.mkdir('var', 0700)
+		ssh_key_path = os.path.join('var', 'ssh_key')
+		ssh_key_file = file(ssh_key_path, 'w')
+		ssh_key_file.write(self.access_key)
+		ssh_key_file.close()
+		os.chmod(ssh_key_path, 0600)
+		os.environ['GIT_SSH'] = os.path.join(os.path.realpath(os.path.curdir), 'bin', 'ssh_wrapper')
+
 	def fetch_admin_repo(self):
 		addition_info = ''
 
 		try:
-			if os.path.isdir('var') == False:
-				os.mkdir('var', 0700)
-			ssh_key_path = os.path.join('var', 'ssh_key')
-			ssh_key_file = file(ssh_key_path, 'w')
-			ssh_key_file.write(self.access_key)
-			ssh_key_file.close()
-			os.chmod(ssh_key_path, 0600)
+			self.set_ssh_env()
 		except Exception, e:
 			return e, addition_info
 
 		try:
 			checkout_path = os.path.join('var', 'repo_' + self.id.__str__())
-			os.environ['GIT_SSH'] = os.path.join(os.path.realpath(os.path.curdir), 'bin', 'ssh_wrapper')
 			if os.path.isdir(checkout_path):
 				useful_func.rmall(checkout_path)
 			git.clone(self.system_path, checkout_path)
