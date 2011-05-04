@@ -11,7 +11,7 @@ logger = logging.getLogger('core.custom')
 class user(models.Model):
 	full_name  = models.CharField(max_length=200, null=True, blank=True)
 	short_name = models.CharField(max_length=30, help_text='short name like nickname, just [a-Z0-9].')
-	email      = models.EmailField()
+	email      = models.EmailField(null=True, blank=True)
 
 	def __unicode__(self):
 		if self.full_name is None:
@@ -29,7 +29,7 @@ class ssh_keys(models.Model):
 		verbose_name        = 'ssh key'
 
 	key        = models.TextField()
-	user_id    = models.ForeignKey(user)
+	user       = models.ForeignKey(user)
 
 
 class Repository_System(models.Model):
@@ -108,7 +108,7 @@ class Repository_System(models.Model):
 							for tmpkey in tmpf.readlines():
 								key = ssh_keys()
 								key.key = tmpkey
-								key.user_id = u
+								key.user = u
 								key.save()
 							tmpf.close()
 						else:
