@@ -163,7 +163,7 @@ class git_repository(models.Model):
 			for (access_mode_name, access_mode) in { 'writable' : False, 'readonly' : True }.items():
 				members = access.objects.filter(repository=repository,read_only=access_mode).all()
 				if members.count() > 0:
-					current_section = repository.name + '-' + access_mode_name
+					current_section = 'group ' + repository.name + '-' + access_mode_name
 					gconf.add_section(current_section)
 					gconf.set(current_section, 'members', ''.join(map(lambda x: x.user.short_name + ' ', members)))
 					gconf.set(current_section, access_mode_name, repository.name)
