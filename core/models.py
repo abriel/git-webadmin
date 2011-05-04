@@ -144,6 +144,29 @@ class repository_system(models.Model):
 
 		return None, addition_info
 
+	def git_push(self, addition_info):
+		grepo = git.LocalRepository(os.path.join('var','repo_' + self.id.__str__()))
+		for (file_typo, files) in { 'changed': grepo.getChangedFiles(), 'added': grepo.getUntrackedFiles() }.items():
+			for gfile in map(lambda x: str(x), files):
+				if gfile.endswith('.conf'):
+					commit_message = file_typo + ' config file: %s. %s' % (gfile, addition_info)
+				elif gfile.startswith('keydir') and gfile.endswith('.pub'):
+					commit_message = file_typo + ' keys for user: %s. %s' % (os.path.basename(gfile).partition('.')[0], addition_info)
+				grepo.add(gfile)
+				grepo.commit(commit_message)
+		for user_with_key in map(lambda x: x.partition('.pub')[0],
+								filter(lambda x: x.endswith('.pub'),
+									os.listdir(os.path.join('var','repo_' + self.id.__str__(), 'keydir')))):
+			if user.objects.filter(short_name=user_with_key).count() == 0:
+				gfile = os.path.join('var','repo_' + self.id.__str__(), 'keydir', user_with_key + '.pub')
+				os.remove(gfile)
+				commit_message = 'deleted not needed user keyfile anymore: %s. %s' % (gfile, addition_info)
+				grepo.add(gfile)
+				grepo.commit(commit_message)
+
+		self.set_ssh_env()
+		grepo.push()
+
 
 class git_repository(models.Model):
 
