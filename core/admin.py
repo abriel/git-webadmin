@@ -14,9 +14,21 @@ class access_users(admin.StackedInline):
 	model = access
 	extra = 0
 
-class git_repo_admin(admin.ModelAdmin):
+class GitRepositoryAdmin(admin.ModelAdmin):
 	inlines = [access_users]
 	list_display = ('name', 'system')
+
+	def save_model(self, request, obj, form, change):
+		obj.save()
+
+		try:
+			obj.generate_config()
+			messages.success(request, 'config was generated')
+			messages.info(request, 'trying push changed config to remote server...')
+			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name )
+			messages.success(request, 'system repository was synced with remote server')
+		except Exception, e:
+			messages.error(request, e)
 
 class RepositorySystemAdmin(admin.ModelAdmin):
 
@@ -45,6 +57,6 @@ class RepositorySystemAdmin(admin.ModelAdmin):
 
 admin.site.register(user, useradmin)
 
-admin.site.register(git_repository, git_repo_admin)
+admin.site.register(git_repository, GitRepositoryAdmin)
 admin.site.register(repository_system, RepositorySystemAdmin)
 
