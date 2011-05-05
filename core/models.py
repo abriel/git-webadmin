@@ -49,7 +49,7 @@ class ssh_keys(models.Model):
 
 class Repository_System(models.Model):
 
-	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite'))
+	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite (not supported yet)'))
 
 	class Meta:
 		verbose_name        = 'Repository system'
