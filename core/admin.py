@@ -25,6 +25,7 @@ class useradmin(admin.ModelAdmin):
 						grepo = git.LocalRepository(os.path.join('var', 'repo_' + repository_system.id.__str__()))
 						grepo.mv(os.path.join('keydir', previos_short_name + '.pub'), os.path.join('keydir', obj.short_name + '.pub'))
 						grepo.commit('Changed user nickname: %s => %s [ Initialized by save command on user %s / %s ]' % (previos_short_name, obj.short_name, obj.full_name, obj.short_name))
+						repository_system.generate_config()
 						repository_system.git_push('[ Initialized by save command on user %s / %s ]' % (obj.full_name, obj.short_name), (not DEBUG) )
 
 			except Exception, e:
@@ -56,7 +57,7 @@ class GitRepositoryAdmin(admin.ModelAdmin):
 		obj.save()
 
 		try:
-			obj.generate_config()
+			obj.system.generate_config()
 			messages.success(request, 'config was generated')
 			messages.info(request, 'trying push changed config to remote server...')
 			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name, (not DEBUG) )
