@@ -22,6 +22,14 @@ class user(models.Model):
 	def count_of_keys(self):
 		return self.ssh_keys_set.count()
 
+	def write_key_file(self, repo_system, only_check=False):
+		key_file = os.path.join('var', 'repo_' + repo_system.id.__str__(), 'keydir', self.short_name + '.pub')
+		if only_check and os.path.isfile(key_file):
+			return
+		fp = open(key_file, 'w')
+		map(lambda x: fp.write(x.key if x.key.endswith('\n') else x.key+'\n'), self.ssh_keys_set.all())
+		fp.close()
+
 
 class ssh_keys(models.Model):
 
@@ -34,10 +42,7 @@ class ssh_keys(models.Model):
 	def apply_keys(self):
 		affected_repository_systems = Repository_System.objects.filter(git_repository__access=self).distinct()
 		for repository_system in affected_repository_systems:
-			key_file = os.path.join('var', 'repo_' + repository_system.id.__str__(), 'keydir', self.user.short_name + '.pub')
-			fp = open(key_file, 'w')
-			map(lambda x: fp.write(x.key if x.key.endswith('\n') else x.key+'\n'), ssh_keys.objects.filter(user=self.user))
-			fp.close()
+			self.user.write_key_file(repository_system)
 		
 		return affected_repository_systems
 
