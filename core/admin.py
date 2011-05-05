@@ -65,6 +65,20 @@ class GitRepositoryAdmin(admin.ModelAdmin):
 		except Exception, e:
 			messages.error(request, e)
 
+	def save_formset(self, request, form, formset, change):
+		instances = formset.save()
+		try:
+			for instance in instances:
+				instance.check_keys()
+			if len(instances) > 0:
+				instance = instances[0]
+				rsystem = Repository_System.objects.filter(git_repository__access=instance)[0]
+				rsystem.generate_config()
+				rsystem.git_push('[ Initialized by save access set on repository %s ]' % instance.repository.name, (not DEBUG) )
+		except Exception, e:
+			messages.error(request, e)
+
+
 class RepositorySystemAdmin(admin.ModelAdmin):
 
 	def save_model(self, request, obj, form, change):
