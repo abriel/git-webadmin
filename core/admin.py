@@ -1,6 +1,10 @@
 from core.models import user, ssh_keys, git_repository, access, Repository_System
 from django.contrib import admin
 from django.contrib import messages
+from self_libs import git
+import os
+from settings import DEBUG
+
 
 class ssh_keys_inline(admin.StackedInline):
 	model = ssh_keys
@@ -9,6 +13,36 @@ class ssh_keys_inline(admin.StackedInline):
 class useradmin(admin.ModelAdmin):
 	inlines = [ssh_keys_inline]
 	list_display = ('full_name', 'email', 'count_of_keys')
+
+	def save_model(self, request, obj, form, change):
+		if change == True:
+			previos_short_name = user.objects.get(id=obj.id).short_name
+			obj.save()
+			try:
+				if previos_short_name != obj.short_name:
+					affected_repository_systems = Repository_System.objects.filter(git_repository__access__user=obj).distinct()
+					for repository_system in affected_repository_systems:
+						grepo = git.LocalRepository(os.path.join('var', 'repo_' + repository_system.id.__str__()))
+						grepo.mv(os.path.join('keydir', previos_short_name + '.pub'), os.path.join('keydir', obj.short_name + '.pub'))
+						grepo.commit('Changed user nickname: %s => %s [ Initialized by save command on user %s / %s ]' % (previos_short_name, obj.short_name, obj.full_name, obj.short_name))
+						repository_system.git_push('[ Initialized by save command on user %s / %s ]' % (obj.full_name, obj.short_name), (not DEBUG) )
+
+			except Exception, e:
+				messages.error(request, e)
+
+		else:
+			obj.save()
+
+	def save_formset(self, request, form, formset, change):
+		instances = formset.save()
+		try:
+			if len(instances) > 0:
+				rsystems = instances[0].apply_keys()
+				for rsystem in rsystems:
+					rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instances[0].user.full_name, instances[0].user.short_name), (not DEBUG) )
+		except Exception, e:
+			messages.error(request, e)
+
 
 class access_users(admin.StackedInline):
 	model = access
@@ -25,7 +59,7 @@ class GitRepositoryAdmin(admin.ModelAdmin):
 			obj.generate_config()
 			messages.success(request, 'config was generated')
 			messages.info(request, 'trying push changed config to remote server...')
-			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name )
+			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name, (not DEBUG) )
 			messages.success(request, 'system repository was synced with remote server')
 		except Exception, e:
 			messages.error(request, e)

@@ -31,6 +31,16 @@ class ssh_keys(models.Model):
 	key        = models.TextField()
 	user       = models.ForeignKey(user)
 
+	def apply_keys(self):
+		affected_repository_systems = Repository_System.objects.filter(git_repository__access=self).distinct()
+		for repository_system in affected_repository_systems:
+			key_file = os.path.join('var', 'repo_' + repository_system.id.__str__(), 'keydir', self.user.short_name + '.pub')
+			fp = open(key_file, 'w')
+			map(lambda x: fp.write(x.key if x.key.endswith('\n') else x.key+'\n'), ssh_keys.objects.filter(user=self.user))
+			fp.close()
+		
+		return affected_repository_systems
+
 
 class Repository_System(models.Model):
 
