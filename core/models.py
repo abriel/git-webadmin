@@ -220,6 +220,10 @@ class access(models.Model):
 	read_only  = models.BooleanField()
 	branch     = models.CharField(max_length=200, null=True, blank=True)
 
+	def __unicode__(self):
+		wmode = 'writable' if not self.read_only else 'read only'
+		return self.user.short_name + ' on ' + self.repository.name + ' mode ' + wmode
+
 	def check_keys(self):
 		affected_repository_systems = Repository_System.objects.filter(git_repository__access=self)
 		for repository_system in affected_repository_systems:
