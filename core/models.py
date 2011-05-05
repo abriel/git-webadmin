@@ -40,7 +40,7 @@ class ssh_keys(models.Model):
 	user       = models.ForeignKey(user)
 
 	def apply_keys(self):
-		affected_repository_systems = Repository_System.objects.filter(git_repository__access=self).distinct()
+		affected_repository_systems = Repository_System.objects.filter(git_repository__access__user__ssh_keys=self).distinct()
 		for repository_system in affected_repository_systems:
 			self.user.write_key_file(repository_system)
 		
