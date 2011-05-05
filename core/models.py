@@ -97,11 +97,9 @@ class Repository_System(models.Model):
 			system_users = map(lambda x: x.short_name, user.objects.all())
 
 			for section in filter(lambda x: x.startswith('group'), gconf.sections()):
-				section_users = []
 				if 'members' in gconf.options(section):
 					for member in gconf.get(section, 'members').split(' '):
 						member = member.strip()
-						section_users.append(member)
 						if member in system_users:
 							continue
 
@@ -138,7 +136,8 @@ class Repository_System(models.Model):
 							else:
 								r = git_repository.objects.filter(name=repo,system=self)[0]
 
-							for member in section_users:
+							for member in gconf.get(section, 'members').split(' '):
+								member = member.strip()
 								related_user = user.objects.filter(short_name=member)[0]
 								if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
 									continue
