@@ -11,12 +11,26 @@ logger = logging.getLogger('core.custom')
 
 
 def ssh_key_post_delete(sender, instance, **kwargs):
-	for rsystem in instance.user.apply_keys():
-		rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instance.user.full_name, instance.user.short_name), (not DEBUG) )
+	try:
+		for rsystem in instance.user.apply_keys():
+			rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instance.user.full_name, instance.user.short_name), (not DEBUG) )
+	except user.DoesNotExist:
+		pass
 
 def access_post_delete(sender, instance, **kwargs):
-	instance.repository.system.generate_config()
-	instance.repository.system.git_push('[ Initialized by changed access rules for repository %s ]' % instance.repository.name, (not DEBUG) )
+	try:
+		instance.repository.system.generate_config()
+		instance.repository.system.git_push('[ Initialized by changed access rules for repository %s ]' % instance.repository.name, (not DEBUG) )
+	except git_repository.DoesNotExist:
+		pass
+	
+def git_repository_post_delete(sender, instance, **kwargs):
+	try:
+		instance.system.generate_config()
+		instance.system.git_push('[ Initialized by delete repository %s ]' % instance.name, (not DEBUG) )
+	except Repository_System.DoesNotExist:
+		pass
+
 
 class user(models.Model):
 	full_name  = models.CharField(max_length=200, null=True, blank=True)
@@ -242,3 +256,4 @@ class access(models.Model):
 
 post_delete.connect(ssh_key_post_delete, sender=ssh_keys)
 post_delete.connect(access_post_delete,  sender=access  )
+post_delete.connect(git_repository_post_delete, sender=git_repository )
