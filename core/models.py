@@ -181,7 +181,7 @@ class Repository_System(models.Model):
 		for user_with_key in map(lambda x: x.partition('.pub')[0],
 								filter(lambda x: x.endswith('.pub'),
 									os.listdir(os.path.join('var','repo_' + self.id.__str__(), 'keydir')))):
-			if user.objects.filter(short_name=user_with_key).count() == 0:
+			if user.objects.filter(short_name=user_with_key,access__repository__system=self).count() == 0:
 				gfile = os.path.join('keydir', user_with_key + '.pub')
 				commit_message = 'deleted not needed anymore user\'s keyfile: %s. %s' % (gfile, addition_info)
 				grepo.rm(gfile)
