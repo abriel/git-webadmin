@@ -61,6 +61,8 @@ class GitRepositoryAdmin(admin.ModelAdmin):
 		try:
 			obj.system.generate_config()
 			messages.success(request, 'config was generated')
+			map(lambda x: x.check_keys(), obj.access_set.all())
+			messages.info(request, 'user keys was checked')
 			messages.info(request, 'trying push changed config to remote server...')
 			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name, (not DEBUG) )
 			messages.success(request, 'system repository was synced with remote server')

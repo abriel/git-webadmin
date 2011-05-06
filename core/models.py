@@ -14,6 +14,9 @@ def ssh_key_post_delete(sender, instance, **kwargs):
 	for rsystem in instance.user.apply_keys():
 		rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instance.user.full_name, instance.user.short_name), (not DEBUG) )
 
+def access_post_delete(sender, instance, **kwargs):
+	instance.repository.system.generate_config()
+	instance.repository.system.git_push('[ Initialized by delete access object on repository %s ]' % instance.repository.name, (not DEBUG) )
 
 class user(models.Model):
 	full_name  = models.CharField(max_length=200, null=True, blank=True)
@@ -238,3 +241,4 @@ class access(models.Model):
 
 
 post_delete.connect(ssh_key_post_delete, sender=ssh_keys)
+post_delete.connect(access_post_delete,  sender=access  )
