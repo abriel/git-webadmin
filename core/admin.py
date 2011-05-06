@@ -1,4 +1,4 @@
-from core.models import user, ssh_keys, git_repository, access, Repository_System
+from core.models import *
 from django.contrib import admin
 from django.contrib import messages
 from self_libs import git
@@ -28,6 +28,9 @@ class useradmin(admin.ModelAdmin):
 						repository_system.generate_config()
 						repository_system.git_push('[ Initialized by save command on user %s / %s ]' % (obj.full_name, obj.short_name), (not DEBUG) )
 
+				for rsystem in obj.apply_keys():
+					rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (obj.full_name, obj.short_name), (not DEBUG) )
+
 			except Exception, e:
 				messages.error(request, e)
 
@@ -38,9 +41,8 @@ class useradmin(admin.ModelAdmin):
 		instances = formset.save()
 		try:
 			if len(instances) > 0:
-				rsystems = instances[0].apply_keys()
-				for rsystem in rsystems:
-					rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instances[0].user.full_name, instances[0].user.short_name), (not DEBUG) )
+				ssh_key_post_delete(ssh_keys, instances[0])
+
 		except Exception, e:
 			messages.error(request, e)
 

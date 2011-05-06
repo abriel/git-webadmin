@@ -4,8 +4,15 @@ from self_libs import useful_func
 from ConfigParser import RawConfigParser
 import os
 import logging
+from django.db.models.signals import post_delete
+from settings import DEBUG
 
 logger = logging.getLogger('core.custom')
+
+
+def ssh_key_post_delete(sender, instance, **kwargs):
+	for rsystem in instance.user.apply_keys():
+		rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instance.user.full_name, instance.user.short_name), (not DEBUG) )
 
 
 class user(models.Model):
@@ -30,6 +37,13 @@ class user(models.Model):
 		map(lambda x: fp.write(x.key if x.key.endswith('\n') else x.key+'\n'), self.ssh_keys_set.all())
 		fp.close()
 
+	def apply_keys(self):
+		affected_repository_systems = Repository_System.objects.filter(git_repository__access__user=self).distinct()
+		for repository_system in affected_repository_systems:
+			self.write_key_file(repository_system)
+		
+		return affected_repository_systems
+
 
 class ssh_keys(models.Model):
 
@@ -38,13 +52,6 @@ class ssh_keys(models.Model):
 
 	key        = models.TextField()
 	user       = models.ForeignKey(user)
-
-	def apply_keys(self):
-		affected_repository_systems = Repository_System.objects.filter(git_repository__access__user__ssh_keys=self).distinct()
-		for repository_system in affected_repository_systems:
-			self.user.write_key_file(repository_system)
-		
-		return affected_repository_systems
 
 
 class Repository_System(models.Model):
@@ -229,3 +236,5 @@ class access(models.Model):
 		for repository_system in affected_repository_systems:
 			self.user.write_key_file(repository_system, only_check=True)
 
+
+post_delete.connect(ssh_key_post_delete, sender=ssh_keys)
