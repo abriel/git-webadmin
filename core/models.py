@@ -16,7 +16,7 @@ def ssh_key_post_delete(sender, instance, **kwargs):
 
 def access_post_delete(sender, instance, **kwargs):
 	instance.repository.system.generate_config()
-	instance.repository.system.git_push('[ Initialized by delete access object on repository %s ]' % instance.repository.name, (not DEBUG) )
+	instance.repository.system.git_push('[ Initialized by changed access rules for repository %s ]' % instance.repository.name, (not DEBUG) )
 
 class user(models.Model):
 	full_name  = models.CharField(max_length=200, null=True, blank=True)

@@ -75,10 +75,7 @@ class GitRepositoryAdmin(admin.ModelAdmin):
 			for instance in instances:
 				instance.check_keys()
 			if len(instances) > 0:
-				instance = instances[0]
-				rsystem = Repository_System.objects.filter(git_repository__access=instance)[0]
-				rsystem.generate_config()
-				rsystem.git_push('[ Initialized by save access set on repository %s ]' % instance.repository.name, (not DEBUG) )
+				access_post_delete(access, instances[0])
 		except Exception, e:
 			messages.error(request, e)
 
