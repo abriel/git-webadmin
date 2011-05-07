@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib import messages
 from self_libs import git
 import os
-from settings import DEBUG
+from settings import GIT_DEBUG
 
 
 class ssh_keys_inline(admin.StackedInline):
@@ -26,10 +26,10 @@ class useradmin(admin.ModelAdmin):
 						grepo.mv(os.path.join('keydir', previos_short_name + '.pub'), os.path.join('keydir', obj.short_name + '.pub'))
 						grepo.commit('Changed user nickname: %s => %s [ Initialized by save command on user %s / %s ]' % (previos_short_name, obj.short_name, obj.full_name, obj.short_name))
 						repository_system.generate_config()
-						repository_system.git_push('[ Initialized by save command on user %s / %s ]' % (obj.full_name, obj.short_name), (not DEBUG) )
+						repository_system.git_push('[ Initialized by save command on user %s / %s ]' % (obj.full_name, obj.short_name), (not GIT_DEBUG) )
 
 				for rsystem in obj.apply_keys():
-					rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (obj.full_name, obj.short_name), (not DEBUG) )
+					rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (obj.full_name, obj.short_name), (not GIT_DEBUG) )
 
 			except Exception, e:
 				messages.error(request, e)
@@ -64,7 +64,7 @@ class GitRepositoryAdmin(admin.ModelAdmin):
 			map(lambda x: x.check_keys(), obj.access_set.all())
 			messages.info(request, 'user keys was checked')
 			messages.info(request, 'trying push changed config to remote server...')
-			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name, (not DEBUG) )
+			obj.system.git_push('[ Initialized by save command on repository %s ]' % obj.name, (not GIT_DEBUG) )
 			messages.success(request, 'system repository was synced with remote server')
 		except Exception, e:
 			messages.error(request, e)

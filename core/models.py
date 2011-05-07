@@ -5,7 +5,7 @@ from ConfigParser import RawConfigParser
 import os
 import logging
 from django.db.models.signals import post_delete
-from settings import DEBUG
+from settings import GIT_DEBUG
 
 logger = logging.getLogger('core.custom')
 
@@ -13,21 +13,21 @@ logger = logging.getLogger('core.custom')
 def ssh_key_post_delete(sender, instance, **kwargs):
 	try:
 		for rsystem in instance.user.apply_keys():
-			rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instance.user.full_name, instance.user.short_name), (not DEBUG) )
+			rsystem.git_push('[ Initialized by apply keys for user %s / %s ]' % (instance.user.full_name, instance.user.short_name), (not GIT_DEBUG) )
 	except user.DoesNotExist:
 		pass
 
 def access_post_delete(sender, instance, **kwargs):
 	try:
 		instance.repository.system.generate_config()
-		instance.repository.system.git_push('[ Initialized by changed access rules for repository %s ]' % instance.repository.name, (not DEBUG) )
+		instance.repository.system.git_push('[ Initialized by changed access rules for repository %s ]' % instance.repository.name, (not GIT_DEBUG) )
 	except git_repository.DoesNotExist:
 		pass
 	
 def git_repository_post_delete(sender, instance, **kwargs):
 	try:
 		instance.system.generate_config()
-		instance.system.git_push('[ Initialized by delete repository %s ]' % instance.name, (not DEBUG) )
+		instance.system.git_push('[ Initialized by delete repository %s ]' % instance.name, (not GIT_DEBUG) )
 	except Repository_System.DoesNotExist:
 		pass
 
