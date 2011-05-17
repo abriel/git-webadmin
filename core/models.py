@@ -55,7 +55,7 @@ class user(models.Model):
 		fp.close()
 
 	def apply_keys(self):
-		affected_repository_systems = Repository_System.objects.filter(git_repository__gitosis_access__user=self).distinct()
+		affected_repository_systems = Repository_System.objects.filter(git_repository__access__user=self).distinct()
 		for repository_system in affected_repository_systems:
 			self.write_key_file(repository_system)
 		
@@ -195,7 +195,7 @@ class Repository_System(models.Model):
 		for user_with_key in map(lambda x: x.partition('.pub')[0],
 								filter(lambda x: x.endswith('.pub'),
 									os.listdir(os.path.join('var','repo_' + self.id.__str__(), 'keydir')))):
-			if user.objects.filter(short_name=user_with_key,gitosis_access__repository__system=self).count() == 0:
+			if user.objects.filter(short_name=user_with_key,access__repository__system=self).count() == 0:
 				gfile = os.path.join('keydir', user_with_key + '.pub')
 				commit_message = 'deleted not needed anymore user\'s keyfile: %s. %s' % (gfile, addition_info)
 				grepo.rm(gfile)
