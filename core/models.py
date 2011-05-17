@@ -55,7 +55,7 @@ class user(models.Model):
 		fp.close()
 
 	def apply_keys(self):
-		affected_repository_systems = Repository_System.objects.filter(git_repository__access__user=self).distinct()
+		affected_repository_systems = Repository_System.objects.filter(git_repository__gitosis_access__user=self).distinct()
 		for repository_system in affected_repository_systems:
 			self.write_key_file(repository_system)
 		
@@ -73,7 +73,7 @@ class ssh_keys(models.Model):
 
 class Repository_System(models.Model):
 
-	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite (not supported yet)'))
+	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite (dev)'))
 
 	class Meta:
 		verbose_name        = 'Repository system'
@@ -168,10 +168,10 @@ class Repository_System(models.Model):
 							for member in gconf.get(section, 'members').split(' '):
 								member = member.strip()
 								related_user = user.objects.filter(short_name=member)[0]
-								if access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
+								if gitosis_access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
 									continue
 								logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
-								access_obj = access()
+								access_obj = gitosis_access()
 								access_obj.repository = r
 								access_obj.user = related_user
 								access_obj.read_only = access_mode_dict[access_mode]
@@ -195,7 +195,7 @@ class Repository_System(models.Model):
 		for user_with_key in map(lambda x: x.partition('.pub')[0],
 								filter(lambda x: x.endswith('.pub'),
 									os.listdir(os.path.join('var','repo_' + self.id.__str__(), 'keydir')))):
-			if user.objects.filter(short_name=user_with_key,access__repository__system=self).count() == 0:
+			if user.objects.filter(short_name=user_with_key,gitosis_access__repository__system=self).count() == 0:
 				gfile = os.path.join('keydir', user_with_key + '.pub')
 				commit_message = 'deleted not needed anymore user\'s keyfile: %s. %s' % (gfile, addition_info)
 				grepo.rm(gfile)
@@ -212,7 +212,7 @@ class Repository_System(models.Model):
 
 		for repository in repositories:
 			for (access_mode_name, access_mode) in { 'writable' : False, 'readonly' : True }.items():
-				members = access.objects.filter(repository=repository,read_only=access_mode).all()
+				members = gitosis_access.objects.filter(repository=repository,read_only=access_mode).all()
 				if members.count() > 0:
 					current_section = 'group ' + repository.name + '-' + access_mode_name
 					gconf.add_section(current_section)
@@ -242,7 +242,6 @@ class access(models.Model):
 	repository = models.ForeignKey(git_repository)
 	user       = models.ForeignKey(user)
 	read_only  = models.BooleanField()
-	branch     = models.CharField(max_length=200, null=True, blank=True)
 
 	def __unicode__(self):
 		wmode = 'writable' if not self.read_only else 'read only'
@@ -252,6 +251,15 @@ class access(models.Model):
 		self.user.write_key_file(self.repository.system, only_check=True)
 
 
+class gitosis_access(access):
+	pass
+
+
+class gitolite_access(access):
+	create_branch = models.BooleanField()
+	branch        = models.CharField(max_length=200, null=True, blank=True)
+
+
 post_delete.connect(ssh_key_post_delete, sender=ssh_keys)
-post_delete.connect(access_post_delete,  sender=access  )
+post_delete.connect(access_post_delete,  sender=gitosis_access  )
 post_delete.connect(git_repository_post_delete, sender=git_repository )
