@@ -249,9 +249,7 @@ class access(models.Model):
 		return self.user.short_name + ' on ' + self.repository.name + ' mode ' + wmode
 
 	def check_keys(self):
-		affected_repository_systems = Repository_System.objects.filter(git_repository__access=self)
-		for repository_system in affected_repository_systems:
-			self.user.write_key_file(repository_system, only_check=True)
+		self.user.write_key_file(self.repository.system, only_check=True)
 
 
 post_delete.connect(ssh_key_post_delete, sender=ssh_keys)
