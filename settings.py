@@ -1,3 +1,5 @@
+import os
+
 # Django settings for gitolite_webadmin project.
 
 DEBUG = True
@@ -102,7 +104,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'gitolite_webadmin.urls'
+ROOT_URLCONF = str(__file__).split(os.path.sep)[-2] + '.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
