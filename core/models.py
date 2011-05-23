@@ -1,5 +1,5 @@
 from django.db import models
-from self_libs import git
+from self_libs.gitpy import git
 from self_libs import useful_func
 from ConfigParser import RawConfigParser
 import os
@@ -198,7 +198,7 @@ class Repository_System(models.Model):
 			if user.objects.filter(short_name=user_with_key,access__repository__system=self).count() == 0:
 				gfile = os.path.join('keydir', user_with_key + '.pub')
 				commit_message = 'deleted not needed anymore user\'s keyfile: %s. %s' % (gfile, addition_info)
-				grepo.rm(gfile)
+				grepo.delete(gfile)
 				grepo.commit(commit_message)
 
 		if push == True:

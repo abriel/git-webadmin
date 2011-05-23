@@ -1,7 +1,7 @@
 from core.models import *
 from django.contrib import admin
 from django.contrib import messages
-from self_libs import git
+from self_libs.gitpy import git
 import os
 from settings import GIT_DEBUG
 
