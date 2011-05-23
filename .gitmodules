@@ -1,0 +1,3 @@
+[submodule "self_libs/gitpy"]
+	path = self_libs/gitpy
+	url = https://github.com/abriel/gitpy.git
