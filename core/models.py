@@ -6,6 +6,8 @@ import os
 import logging
 from django.db.models.signals import post_delete
 from settings import GIT_DEBUG
+import tempfile
+import ConfigParser
 
 logger = logging.getLogger('core.custom')
 
@@ -223,6 +225,52 @@ class Repository_System(models.Model):
 		fp = open(gconf_path, 'w')
 		gconf.write(fp)
 		fp.close()
+
+
+class Gitolite_Repository_System(Repository_System):
+	
+	CONFIG_NAME = 'gitolite.conf'
+	
+	def _parse_config(self, checkout_path = '.'):
+		config_path = os.path.join(checkout_path, self.CONFIG_NAME)
+		fp = file(config_path, 'r')
+		tmp = tempfile.TemporaryFile()
+		for line in fp.readlines():
+			if line.startswith('repo'):
+				line = '[' + line.strip() + ']'
+			if line.startswith('@'):
+				tmp.write('[usergroup %s]\n' % line.split('=')[0] )
+			tmp.write(line.strip() + '\n')
+
+		tmp.seek(0)
+		config = ConfigParser.RawConfigParser()
+		config.readfp(tmp)
+		tmp.close()
+
+		rs = { 'repositories': {}, 'usergroups': {} }
+		for section in config.sections():
+			repo_name = section.split()[1]
+			for option in config.options(section):
+				if section.startswith('repo'):
+					if not rs['repositories'].has_key(repo_name):
+						rs['repositories'].update({ repo_name: {} })
+					rs['repositories'][repo_name].update( { option: config.get(section, option).split() } )
+				elif section.startswith('usergroup'):
+					rs['usergroups'].update( { section.split()[1][1:] : config.get(section, option).split() } )
+
+		return rs
+
+
+class Gitosis_Repository_System(Repository_System):
+
+	CONFIG_NAME = 'gitosis.conf'
+
+	def _parse_config(self, checkout_path = '.'):
+		gconf_path = os.path.join(checkout_path, self.CONFIG_NAME)
+		gconf = RawConfigParser()
+		gconf.read([gconf_path])
+
+		return gconf
 
 
 class git_repository(models.Model):
