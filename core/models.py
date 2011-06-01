@@ -270,7 +270,17 @@ class Gitosis_Repository_System(Repository_System):
 		gconf = RawConfigParser()
 		gconf.read([gconf_path])
 
-		return gconf
+		rs = { 'repositories': {}, 'usergroups': {} }
+		for section in gconf.sections():
+			for (option, translated_option) in [ ('writable', 'rw'), ('readonly', 'r') ]:
+				if gconf.has_option(section, option):
+					for repo_name in gconf.get(section, option).strip().split():
+						if not rs['repositories'].has_key(repo_name):
+							rs['repositories'].update({ repo_name: {} })
+						if gconf.has_option(section, 'members'):
+							rs['repositories'][repo_name].update( { translated_option: gconf.get(section, 'members').split() } )
+
+		return rs
 
 
 class git_repository(models.Model):
