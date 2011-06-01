@@ -121,63 +121,38 @@ class Repository_System(models.Model):
 			return e, addition_info
 
 		try:
-			gconf_path = os.path.join(checkout_path, 'gitosis.conf')
-			gconf = RawConfigParser()
-			gconf.read([gconf_path])
+			access_map = self._parse_config(checkout_path)
 			git_repository.objects.filter(system=self).delete()
 			system_users = map(lambda x: x.short_name, user.objects.all())
 
-			for section in filter(lambda x: x.startswith('group'), gconf.sections()):
-				if 'members' in gconf.options(section):
-					for member in gconf.get(section, 'members').split(' '):
-						member = member.strip()
+			for (repo_name, repo_options) in access_map['repositories'].items():
+				logger.info('found new repository %s' % repo)
+				r = git_repository()
+				r.name = repo_name
+				r.system = self
+				r.save()
+				for (access_mode, users) in repo_options.items():
+					for member in users:
+
 						if member in system_users:
 							continue
-
 						logger.info('found user %s' % member)
 						u = user()
 						u.short_name = u.full_name = member
 						u.save()
 						system_users.append(member)
 
-						member_key_path = os.path.join(checkout_path, 'keydir', member + '.pub' )
-						if os.path.isfile( member_key_path ):
-							logger.info('importing key file %s for user %s' % (member_key_path, member))
-							tmpf = file( member_key_path )
-							for tmpkey in tmpf.readlines():
-								key = ssh_keys()
-								key.key = tmpkey
-								key.user = u
-								key.save()
-							tmpf.close()
-						else:
-							logger.warning('Cannot import key file %s for user %s' % (member_key_path, member))
-
-				for access_mode in ['writable', 'readonly']:
-					access_mode_dict = { 'writable' : False, 'readonly' : True }
-					if access_mode in gconf.options(section):
-						for repo in gconf.get(section, access_mode).split(' '):
-							repo = repo.strip()
-							if git_repository.objects.filter(name=repo,system=self).count() == 0:
-								logger.info('found new repository %s' % repo)
-								r = git_repository()
-								r.name = repo
-								r.system = self
-								r.save()
-							else:
-								r = git_repository.objects.filter(name=repo,system=self)[0]
-
-							for member in gconf.get(section, 'members').split(' '):
-								member = member.strip()
-								related_user = user.objects.filter(short_name=member)[0]
-								if gitosis_access.objects.filter(repository=r, user=related_user, read_only=access_mode_dict[access_mode]).count() > 0:
-									continue
-								logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
-								access_obj = gitosis_access()
-								access_obj.repository = r
-								access_obj.user = related_user
-								access_obj.read_only = access_mode_dict[access_mode]
-								access_obj.save()
+						readonly = False if access_mode.startswith('rw') else True
+						if access.objects.filter(repository=r, user=u, read_only=readonly).count() > 0:
+							continue
+						logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
+						access_obj = gitosis_access() if self.engine == 'gitosis' else gitolite_access()
+						access_obj.repository = r
+						access_obj.user = related_user
+						access_obj.read_only = readonly
+						if access_mode == 'rw+':
+							access_obj.create_branch = True
+						access_obj.save()
 
 		except Exception, e:
 			return e, addition_info
