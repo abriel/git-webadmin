@@ -1,0 +1,12 @@
+<table>
+	<tr><td><h3>System repositories:</h3></td></tr>
+	{% for srepo in srepo_list %}
+	<tr><td>{{ repo }}</td></tr>
+	{% endfor %}
+
+</table>
+<hr>
+<a href="/system_repositories/add/">Add another system repository</a><br><br>
+<pre>
+Note: the system repository is a repository gitosis-admin.git or gitolite-admin.git,
+which control many usual git repositories.

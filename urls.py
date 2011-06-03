@@ -6,7 +6,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    # url(r'^$', 'gitolite_webadmin.views.home', name='home'),
+    url(r'^$', 'core.views.index'),
     # url(r'^gitolite_webadmin/', include('gitolite_webadmin.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
