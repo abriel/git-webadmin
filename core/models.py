@@ -75,21 +75,17 @@ class ssh_keys(models.Model):
 
 class Repository_System(models.Model):
 
-	GIT_ENGINE_CHOICES = (('gitosis', 'gitosis'), ('gitolite', 'gitolite (dev)'))
-
 	class Meta:
 		verbose_name        = 'Repository system'
 
 	system_path = models.CharField(
 								max_length=250,
 								verbose_name='URL to admin repo',
-								help_text='Example: file:///var/git/repositories/gitosis-admin.git or git@example.com/gitosis-admin.git'
+								help_text='Example: file:///var/git/repositories/gitosis-admin.git or git@example.com/gitosis-admin.git',
+								unique=True
 								)
 	access_key  = models.TextField(help_text='your private ssh key, which will be used for access to admin repository')
-	engine      = models.CharField(
-								max_length=50,
-								choices=GIT_ENGINE_CHOICES
-								)
+	status     = models.SmallIntegerField(default=0, blank=True, null=True)
 
 	def __unicode__(self):
 		return self.system_path
