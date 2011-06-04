@@ -101,12 +101,10 @@ class Repository_System(models.Model):
 		os.environ['GIT_SSH'] = os.path.join(os.path.realpath(os.path.curdir), 'bin', 'ssh_wrapper')
 
 	def fetch_admin_repo(self):
-		addition_info = ''
-
 		try:
 			self.set_ssh_env()
 		except Exception, e:
-			return e, addition_info
+			return 1, e
 
 		try:
 			checkout_path = os.path.join('var', 'repo_' + self.id.__str__())
@@ -114,7 +112,7 @@ class Repository_System(models.Model):
 				useful_func.rmall(checkout_path)
 			git.clone(self.system_path, checkout_path)
 		except Exception, e:
-			return e, addition_info
+			return 2, e
 
 		try:
 			access_map = self._parse_config(checkout_path)
@@ -152,9 +150,9 @@ class Repository_System(models.Model):
 						access_obj.save()
 
 		except Exception, e:
-			return e, addition_info
+			return 3, e
 
-		return None, addition_info
+		return 0, ''
 
 	def git_push(self, addition_info, push=True):
 		grepo = git.LocalRepository(os.path.join('var','repo_' + self.id.__str__()))

@@ -1,0 +1,60 @@
+{% if error %}
+<div style="width:800px">
+A error occurs while adding system repository:<br>
+{{ error }}
+</div>
+<hr>
+{%endif%}
+
+<h2>New system repository:</h2>
+<form method="post" action=".">
+{% csrf_token %}
+<table>
+	<tr>
+		<td>GIT URL to admin repository:</td>
+		<td><input type="input" size=50 name="git_url" {% if git_url.strip %} value="{{ git_url }}" {% endif %} />
+		{% if submit and not git_url.strip %}
+		<br><font color=red>it is requied field</font>
+		{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td colspan=2>
+			<pre>
+Note: url to gitolite-admin.git or gitosis-admin.git for checkout this admin repository.
+Example: ssh://git@example.com/gitosis-admin.git
+			</pre>
+		</td>
+	</tr>
+	<tr>
+		<td valign=top>private part of ssh key for access to admin repository:</td>
+		<td><textarea rows=30 cols=80 name="ssh_key" >{% if ssh_key.strip %}{{ ssh_key }}{% endif %}</textarea>
+		{% if submit and not ssh_key.strip %}
+		<br><font color=red>it is requied field</font>
+		{% endif %}
+		</td>
+	</tr>
+	<tr>
+		<td>type of system:</td>
+		<td>
+			<select name="engine">
+			<option value="gitosis" {% if engine == 'gitosis' %} selected {% endif %} >gitosis</option>
+			<option value="gitolite" {% if engine == 'gitolite' %} selected {% endif %} >gitolite</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td colspan=2><br><input type="submit" name="submit" 
+		{% if submit and not status %} value=" try save and import again " 
+		{%else%}
+			{% if status %} 
+				{% if status == 3 %} value="Go to index page"
+				{% else %} value=" try import again "
+				{%endif%}
+			{% else %} value=" save and import "
+			{%endif%}
+		{%endif%} 
+		/></td>
+	</tr>
+</table>
+</form>
