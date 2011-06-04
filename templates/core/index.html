@@ -1,7 +1,14 @@
 <table>
 	<tr><td><h3>System repositories:</h3></td></tr>
 	{% for srepo in srepo_list %}
-	<tr><td>{{ repo }}</td></tr>
+	<tr><td>{{ srepo }} (status: 
+	{%if srepo.status == 2 %}
+	config has not been imported
+	{%endif%}
+	{%if srepo.status == 0%}
+	OK
+	{%endif%}
+	)</td></tr>
 	{% endfor %}
 
 </table>
