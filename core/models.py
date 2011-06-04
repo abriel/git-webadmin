@@ -126,7 +126,7 @@ class Repository_System(models.Model):
 			system_users = map(lambda x: x.short_name, user.objects.all())
 
 			for (repo_name, repo_options) in access_map['repositories'].items():
-				logger.info('found new repository %s' % repo)
+				logger.info('found new repository %s' % repo_name)
 				r = git_repository()
 				r.name = repo_name
 				r.system = self
@@ -134,21 +134,22 @@ class Repository_System(models.Model):
 				for (access_mode, users) in repo_options.items():
 					for member in users:
 
-						if member in system_users:
-							continue
-						logger.info('found user %s' % member)
-						u = user()
-						u.short_name = u.full_name = member
-						u.save()
-						system_users.append(member)
+						try:
+							u = user.objects.filter(short_name=member)[0]
+						except IndexError:
+							logger.info('found user %s' % member)
+							u = user()
+							u.short_name = u.full_name = member
+							u.save()
+							system_users.append(member)
 
 						readonly = False if access_mode.startswith('rw') else True
 						if access.objects.filter(repository=r, user=u, read_only=readonly).count() > 0:
 							continue
-						logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo, access_mode))
-						access_obj = gitosis_access() if self.engine == 'gitosis' else gitolite_access()
+						logger.info('added access rule: user %s to repo %s with access mode %s' % (member, repo_name, access_mode))
+						access_obj = gitosis_access() if isinstance(self, Gitosis_Repository_System) else gitolite_access()
 						access_obj.repository = r
-						access_obj.user = related_user
+						access_obj.user = u
 						access_obj.read_only = readonly
 						if access_mode == 'rw+':
 							access_obj.create_branch = True
