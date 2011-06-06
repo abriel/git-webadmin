@@ -144,7 +144,7 @@ LOGGING = {
         'console':{
             'level':'DEBUG',
             'class':'logging.FileHandler',
-            'filename':'var/core.log',
+            'filename': os.path.join( os.path.dirname(os.path.abspath(__file__)) , 'var/core.log' ) ,
             'formatter': 'verbose'
         },
 
