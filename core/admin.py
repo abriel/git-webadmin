@@ -7,7 +7,7 @@ from settings import GIT_DEBUG
 
 
 class ssh_keys_inline(admin.StackedInline):
-	model = ssh_keys
+	model = ssh_key
 	extra = 0
 
 class useradmin(admin.ModelAdmin):
