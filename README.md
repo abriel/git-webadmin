@@ -21,9 +21,11 @@ To get git-webadmin up and running, follow these steps:
 
     git clone git://github.com/abriel/git-webadmin.git
     cd git-webadmin
-    git submodule init
-    git submodule update
-    # adjust settings.py (at least configure a db in DATABASES)
+    git checkout v0.1.1
+    # adjust settings.py: 
+    	# at least configure a db in DATABASES,
+    	# and probably you want to change GIT_DEBUG to False,
+    	# for pushing changes to gitosis-admin.git repository.
     python manage.py syncdb
     python manage.py runserver
 
@@ -38,4 +40,8 @@ The more detailed documentation can be found in the
 ### Author
 
 * Dmitry Pisarev (https://github.com/abriel)
+
+### Thanks
+
+* Philipp Klaus (https://github.com/pklaus)
 
